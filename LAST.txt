@@ -1,2 +1,2 @@
 LOG:
-1. 7/10/21-11.30: wes isok integrate ambi database, munculne add password
+1. Sedot dari addauth, commit mumet
