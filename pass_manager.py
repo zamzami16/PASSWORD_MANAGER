@@ -343,14 +343,47 @@ class change_password:
                                  "Your site and password didn't exist in data base\nYou can add it first!")
             # self.master.destroy()
 
+class authUser:
+    def __init__(self, master):
+        self.data_base = dataModel()
+        self.master = master
+        self.master.resizable(0, 0)
+        self.master.title("Auth User")
+        self.mainTitle = tk.Label(master=self.master,
+                                  text="Login", font=(15))
+        self.mainTitle.pack(fill=tk.X)
+        self.inputForm_Frame = tk.Frame(master=self.master)
+        self.inputForm_Frame.columnconfigure(2, weight=1)
+        self.inputForm_user = tk.Label(master=self.inputForm_Frame,
+                                       text="User")
+        self.inputForm_password = tk.Label(master=self.inputForm_Frame,
+                                           text="Password")
+        self.inputForm_user.grid(row=0, column=0, sticky='W')
+        self.inputForm_password.grid(row=1, column=0, sticky="W")
+        self.inputForm_entry_append = []
+        for i in range(2):
+            label = tk.Label(self.inputForm_Frame, text=":")
+            label.grid(row=i, column=1)
+            entry = tk.Entry(self.inputForm_Frame, width=30)
+            entry.grid(row=i, column=2, sticky="W")
+            self.inputForm_entry_append.append(entry)
+        self.inputForm_Frame.pack(fill=tk.X)
+        self.buttLoginFrame = tk.Frame(master=self.master)
+        self.buttLoginFrame.columnconfigure(2, weight=1)
+        self.buttonLoginLogin = tk.Button(master=self.buttLoginFrame, text="Login")
+        self.buttonLoginCancel = tk.Button(master=self.buttLoginFrame, text="Cancel")
+        self.buttonLoginLogin.grid(row=0, column=0, sticky='E')
+        self.buttonLoginCancel.grid(row=0, column=2, sticky='E')
+        self.buttLoginFrame.pack()
+
 
 def main():
     """
     Launch the application
     """
     root = tk.Tk()
-    app = main_window(root)
-    # app = add_password(root)
+    # app = main_window(root)
+    app = authUser(root)
     root.mainloop()
 
 
