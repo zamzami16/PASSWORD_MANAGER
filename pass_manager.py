@@ -15,9 +15,11 @@ class dataModel:
         Init data table
         """
         self.db_name = 'password.db'
+        self.is_auth = False
         con = self.connect_to_db()
-        query_init = "CREATE TABLE IF NOT EXISTS PASSWORD (ID INTEGER PRIMARY KEY AUTOINCREMENT, SITE CHAR(50) NOT " \
-                     "NULL UNIQUE, PASSWORD CHAR(50) NOT NULL);"
+        query_user = "CREATE TABLE IF NOT EXISTS USERS (ID INTEGER PRIMARY KEY AUTOINCREMENT, USER CHAR(50) NOT NULL UNIQUE, PASSWORD CHAR(50) NOT NULL);"
+        query_init = "CREATE TABLE IF NOT EXISTS PASSWORD (ID INTEGER PRIMARY KEY AUTOINCREMENT, USER CHAR(50) NOT NULL UNIQUE, SITE CHAR(50) NOT NULL UNIQUE, PASSWORD CHAR(50) NOT NULL);"
+        con.execute(query_user)
         con.execute(query_init)
         con.commit()
         con.close()
@@ -45,25 +47,34 @@ class dataModel:
             if sql_connection is not None:
                 sql_connection.close()
 
-    def get_password(self, site):
-        """
-        Get a password from a site
-        """
-        conn = self.connect_to_db(close=30)
-        if conn is not None:
-            df = pd.read_sql_query("SELECT * FROM PASSWORD", conn)
-            # print(len(df))
-            if len(df) > 0:
-                try:
-                    password = df[df['SITE'] == site].iloc[0, 2]
-                    del df
-                    conn.close()
-                    return password
-                except:
-                    # messagebox.showerror("Error!", "The password site's didn't exists!")
-                    print('Password gaada')
+    def get_password(self, user, site=None):
+        """Get password user and site"""
+        if site is None:
+            conn = self.connect_to_db(close=20)
+            if conn is not None:
+                df = pd.read_sql_query("SELECT * FROM USERS", conn)
+                password = df[df['USER']==user].iloc[0, 2]
+                conn.close()
+                return password
         else:
-            print("need connection first")
+            """
+            Get a password from a site, if site is not None
+            """
+            conn = self.connect_to_db(close=30)
+            if conn is not None:
+                df = pd.read_sql_query("SELECT * FROM PASSWORD", conn)
+                # print(len(df))
+                if len(df) > 0:
+                    try:
+                        password = df[df['SITE'] == site].iloc[0, 3]
+                        del df
+                        conn.close()
+                        return password
+                    except:
+                        # messagebox.showerror("Error!", "The password site's didn't exists!")
+                        print("Password doesn't exist")
+            else:
+                print("need connection first")
 
     def add_password(self, site, password):
         """
@@ -78,17 +89,27 @@ class dataModel:
         cur.close()
         conn.close()
 
-    def check_exist_data(self, site):
+    def check_exist_data(self, site=None, user=None):
         """Check site and password if exist"""
         con = self.connect_to_db(close=30)
-        df = pd.read_sql_query('SELECT * FROM PASSWORD', con)
-        if len(df[df['SITE'] == site]) > 0:
-            # there is a password
-            con.close()
-            return True
-        else:
-            con.close()
-            return False
+        if site is not None:
+            df = pd.read_sql_query('SELECT * FROM PASSWORD', con)
+            if len(df[df['SITE'] == site]) > 0:
+                # there is a password
+                con.close()
+                return True
+            else:
+                con.close()
+                return False
+        if user is not None:
+            df = pd.read_sql_query("SELECT * FROM USERS", con)
+            if len(df[df['USER']==user]) > 0:
+                # there is a user
+                con.close()
+                return True
+            else:
+                con.close()
+                return False
 
     def update_password(self, site, new_password):
         """
@@ -175,7 +196,6 @@ class main_window:
                 if confirm:
                     self.new_window(situs)
 
-
 class add_password:
     """Add Password Window window"""
 
@@ -237,7 +257,7 @@ class add_password:
                 # check len password
                 if len(form[1]) > 7:
                     # check existing password
-                    if self.data_base.check_exist_data(form[0]):
+                    if self.data_base.check_exist_data(site=form[0]):
                         # data ada
                         messagebox.showwarning("Warning!", "This site already exist in Data Base")
                     else:
@@ -308,7 +328,7 @@ class change_password:
         for i in range(4):
             form.append(self.frame_form_entry_append[i].get())
         # get old password and check if it's on data base
-        if self.data_base.check_exist_data(form[0].lower()):
+        if self.data_base.check_exist_data(site=form[0].lower()):
             # data exists, get the old password
             old_password = self.data_base.get_password(form[0].lower())
             # check old_password with old password from input
@@ -370,20 +390,41 @@ class authUser:
         self.inputForm_Frame.pack(fill=tk.X)
         self.buttLoginFrame = tk.Frame(master=self.master)
         self.buttLoginFrame.columnconfigure(2, weight=1)
-        self.buttonLoginLogin = tk.Button(master=self.buttLoginFrame, text="Login")
-        self.buttonLoginCancel = tk.Button(master=self.buttLoginFrame, text="Cancel")
+        self.buttonLoginLogin = tk.Button(master=self.buttLoginFrame, text="Login",
+                                          command=self.login)
+        self.buttonLoginCancel = tk.Button(master=self.buttLoginFrame, text="Cancel",
+                                           command=self.cancel)
         self.buttonLoginLogin.grid(row=0, column=0, sticky='E')
         self.buttonLoginCancel.grid(row=0, column=2, sticky='E')
         self.buttLoginFrame.pack()
 
+    def cancel(self):
+        self.master.destroy()
+
+    def login(self):
+        user = self.inputForm_entry_append[0].get()
+        password = self.inputForm_entry_append[1].get()
+        if len(user) > 0 and len(password) > 0:
+            # let's check that user exist
+            if self.data_base.check_exist_data(user=user):
+                password_db = self.data_base.get_password(user=user)
+                if password_db == password:
+                    self.data_base.is_auth = True
+                    print('user', user, 'is authenticated')
+                    root = tk.Tk()
+                    app = main_window(root)
+                    root.mainloop()
+                    self.master.destroy()
+                else:
+                    messagebox.showerror("Error!",
+                                         "Please enter the correct password!")
 
 def main():
     """
     Launch the application
     """
     root = tk.Tk()
-    # app = main_window(root)
-    app = authUser(root)
+    app = main_window(root)
     root.mainloop()
 
 
