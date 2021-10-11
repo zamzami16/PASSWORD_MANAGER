@@ -1,4 +1,5 @@
 import sqlite3
+import pandas as pd
 
 class dataModel:
     """
@@ -12,7 +13,7 @@ class dataModel:
         self.db_name = 'password.db'
         con = self.connect_to_db()
         query_init = "CREATE TABLE IF NOT EXISTS PASSWORD (ID INTEGER PRIMARY KEY AUTOINCREMENT, SITE CHAR(50) NOT " \
-                     "NULL UNIQUE, PASSWORD CHAR(50) NOT NULL);"
+                     "NULL UNIQUE, PASSWORD CHAR(50) NOT NULL, USER CHAR(50) NOT NULL);"
         query_init2 = "CREATE TABLE IF NOT EXISTS USERS (ID INTEGER PRIMARY KEY AUTOINCREMENT, USER CHAR(50) NOT NULL UNIQUE, PASSWORD CHAR(50) NOT NULL);"
         con.execute(query_init)
         con.execute(query_init2)
@@ -74,13 +75,13 @@ class dataModel:
             con.close()
             return False
 
-    def get_password(self, site):
+    def get_password(self, site, user):
         """
         Get a password from a site
         """
         conn = self.connect_to_db(close=30)
         if conn is not None:
-            df = pd.read_sql_query("SELECT * FROM PASSWORD", conn)
+            df = pd.read_sql_query(f"SELECT * FROM PASSWORD WHERE USER = '{user}'", conn)
             # print(len(df))
             if len(df) > 0:
                 try:
@@ -94,27 +95,30 @@ class dataModel:
         else:
             print("need connection first")
 
-    def add_password(self, site, password):
+    def add_password(self, site, password, user):
         """
         Add new site and password data
         """
         conn = self.connect_to_db(close=30)
-        query = f"INSERT INTO PASSWORD (SITE, PASSWORD) VALUES (?,?)"
-        task = (site, password)
+        query = f"INSERT INTO PASSWORD (SITE, PASSWORD, USER) VALUES (?,?,?)"
+        task = (site, password, user)
         cur = conn.cursor()
         cur.execute(query, task)
         conn.commit()
         cur.close()
         conn.close()
 
-    def check_exist_data(self, site):
+    def check_exist_data(self, site, user):
         """Check site and password if exist"""
         con = self.connect_to_db(close=30)
         df = pd.read_sql_query('SELECT * FROM PASSWORD', con)
         if len(df[df['SITE'] == site]) > 0:
-            # there is a password
-            con.close()
-            return True
+            if len(df[df['USER']==user]) > 0:
+                # there is a password
+                con.close()
+                return True
+            else:
+                return False
         else:
             con.close()
             return False

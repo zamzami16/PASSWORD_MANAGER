@@ -1,6 +1,8 @@
 import tkinter as tk
+import modelData
+import pandas as pd
 import sqlite3
-from tkinter import ttk, Canvas
+from tkinter import ttk, Canvas, messagebox
 
 class formManage(ttk.Frame):
     def __init__(self, container, name_form):
@@ -20,7 +22,7 @@ class formManage(ttk.Frame):
                 self.entry_form.append(entry)
                 # self.grid(row=1, column=0, sticky='wnse', pady=5)
             self.show_password_butt = ttk.Button(self, text='Show Password',
-                                                 command='')
+                                                 command=self.master.showPassword)
             self.show_password_butt.place(x=112, y=69)
             self.quid_butt = ttk.Button(self, text='Quit',
                                         command=self.master.destroy)
@@ -37,7 +39,7 @@ class formManage(ttk.Frame):
                 self.entry_form.append(entry)
                 # self.grid(row=2, column=0, sticky='wnse', pady=5)
             self.show_password_butt = ttk.Button(self, text='Add Password',
-                                                 command='')
+                                                 command=self.master.addPassword)
             self.show_password_butt.place(x=113, y=95)
             self.quid_butt = ttk.Button(self, text='Quit',
                                         command=self.master.destroy)
@@ -102,6 +104,10 @@ class formManage(ttk.Frame):
         for entry in self.entry_form:
             value.append(entry.get())
         return value
+
+    def deleteAll(self):
+        for entry in self.entry_form:
+            entry.delete(0, tk.END)
 
 # class containerFormLogin(ttk.Frame):
 #     def __init__(self, container):
@@ -290,13 +296,16 @@ class containerButt_opt(ttk.Labelframe):
         self.grid(row=2, column=0, sticky='nswe')
         # self.pack(2, fill=tk.BOTH)
 
+# Main app
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
         self.title('Password Manager')
         self.resizable(False, True)
+        self.dataModel = modelData.dataModel()
         self.masterAuth = False
+        self.whoami = ''
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=3)
         self.grid_rowconfigure(0, weight=1)
@@ -320,6 +329,40 @@ class App(tk.Tk):
         self.updateContainer()
         # print(self.container_frame)
         # self.container_Butt_opt['show'].tkraise()
+    def showPassword(self):
+        print('debug, password appears')
+        [site, password] = self.container_frame['show'].getFromEntry()
+        # if len(password) < 1 and len(site):
+        #     self.container_frame['show'].deleteAll()
+        if self.dataModel.check_exist_data(site, self.whoami):
+            pwd = self.dataModel.get_password(site, self.whoami)
+            self.container_frame['show'].entry_form[1].delete(0, tk.END)
+            self.container_frame['show'].entry_form[1].insert(0, pwd)
+        else:
+            messagebox.showerror("Error!",
+                                 "Your data doesn't exist, you can add it first")
+
+    def addPassword(self):
+        [site, pwd1, pwd2] = self.container_frame['add'].getFromEntry()
+        # print('debug add password', val)
+        print()
+        if pwd1 == pwd2:
+            if 7 < len(pwd1) < 50:
+                if not self.dataModel.check_exist_data(site, self.whoami):
+                    self.dataModel.add_password(site, pwd1, self.whoami)
+                    messagebox.showinfo("Success!",
+                                        "Your password have been saved!")
+                    self.container_frame['add'].deleteAll()
+                else:
+                    messagebox.showerror("Error!",
+                                         "Your password didn't saved!\nYour password is currently exist in data base!")
+            else:
+                messagebox.showerror("Error!",
+                                     "Your password must contain 8 up to 50 character!")
+        else:
+            messagebox.showerror("Error!",
+                                 "Your password didn't same!/nPlease enter the same password!")
+
 
     def updateContainer(self):
         if not self.masterAuth:
@@ -341,6 +384,7 @@ class App(tk.Tk):
         name = self.container_frame_opt.rad_value.get()
         if name == 0:
             opt = 'show'
+            self.container_frame[opt].deleteAll()
         elif name == 1:
             opt = 'add'
         elif name == 2:
@@ -358,7 +402,22 @@ class App(tk.Tk):
 
     def login(self):
         [user, password] = self.container_frame['login'].getFromEntry()
-        print('login', user, password)
+        if self.dataModel.check_exist_data_login(user):
+            pwd = self.dataModel.get_password_login(user)
+            print('db', pwd, 'form', password)
+            if pwd == password:
+                self.masterAuth = True
+                messagebox.showinfo("Information",
+                                    "You have been Logged in")
+                self.whoami = user
+                self.updateContainer()
+            else:
+                messagebox.showerror("Error!",
+                                     "Your Password incorrect!\nPlease Enter Correct Password!")
+        else:
+            messagebox.showerror("Error!",
+                                 "Your username didn't exist or wrong!,\nPlease enter your correct username or contact developer!")
+
 
 if __name__ == '__main__':
     app = App()
