@@ -136,5 +136,13 @@ class dataModel:
         cur.close()
         con.close()
 
+    def deletePassword(self, site, user):
+        con = self.connect_to_db()
+        query = "DELETE FROM PASSWORD WHERE SITE = ? AND USER = ?"
+        task = (site, user)
+        con.execute(query, task)
+        con.commit()
+        con.close()
+
 if __name__ == '__main__':
     pass

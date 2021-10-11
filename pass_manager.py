@@ -23,10 +23,10 @@ class formManage(ttk.Frame):
                 # self.grid(row=1, column=0, sticky='wnse', pady=5)
             self.show_password_butt = ttk.Button(self, text='Show Password',
                                                  command=self.master.showPassword)
-            self.show_password_butt.place(x=112, y=69)
+            self.show_password_butt.place(x=116, y=69)
             self.quid_butt = ttk.Button(self, text='Quit',
                                         command=self.master.destroy)
-            self.quid_butt.place(x=224, y=69)
+            self.quid_butt.place(x=228, y=69)
         elif name_form == 'add':
             label = ('Site Name', 'Enter Password', 'Re-Enter Password')
             for i in range(3):
@@ -40,10 +40,10 @@ class formManage(ttk.Frame):
                 # self.grid(row=2, column=0, sticky='wnse', pady=5)
             self.show_password_butt = ttk.Button(self, text='Add Password',
                                                  command=self.master.addPassword)
-            self.show_password_butt.place(x=113, y=95)
+            self.show_password_butt.place(x=117, y=95)
             self.quid_butt = ttk.Button(self, text='Quit',
                                         command=self.master.destroy)
-            self.quid_butt.place(x=225, y=95)
+            self.quid_butt.place(x=229, y=95)
         elif name_form == 'change':
             label = ('Site Name', 'Old Password', 'New Password', 'Re-New Password')
             for i in range(4):
@@ -57,33 +57,33 @@ class formManage(ttk.Frame):
                 # self.grid(row=3, column=0, sticky='wnse', pady=5)
             ttk.Label(self).grid(row=4, column=0, pady=2)
             self.show_password_butt = ttk.Button(self, text='Change Password',
-                                            command='')
-            self.show_password_butt.place(x=111, y=99)
+                                            command=self.master.changePassword)
+            self.show_password_butt.place(x=115, y=99)
             self.quid_butt = ttk.Button(self, text='Quit',
                                         command=self.master.destroy)
-            self.quid_butt.place(x=223, y=99)
+            self.quid_butt.place(x=227, y=99)
         elif name_form == 'delete':
             label = 'Site Name\t'
             for i in range(1):
                 lab = ttk.Label(self, text=label)
-                lab.grid(row=i, column=0, sticky='W')
-                ttk.Label(self, text=':').grid(row=i, column=1)
+                lab.grid(row=i, column=0, sticky='W', padx=5, pady=5)
+                ttk.Label(self, text=':').grid(row=i, column=1, sticky='w')
                 entry = ttk.Entry(self, width=30)
-                entry.grid(row=i, column=2, padx=5,pady=5)
+                entry.grid(row=i, column=2, padx=5, pady=5)
                 self.label_form.append(lab)
                 self.entry_form.append(entry)
                 # self.grid(row=4, column=0, sticky='wnse', pady=5)
             self.show_password_butt = ttk.Button(self, text='Delete Password',
-                                                 command='')
-            self.show_password_butt.place(x=112, y=39)
+                                                 command=self.master.deletePassword)
+            self.show_password_butt.place(x=121, y=39)
             self.quid_butt = ttk.Button(self, text='Quit',
                                         command=self.master.destroy)
-            self.quid_butt.place(x=224, y=39)
+            self.quid_butt.place(x=233, y=39)
         elif name_form == 'login':
             label = ('Username', 'Password')
             for i in range(2):
                 lab = ttk.Label(self, text=label[i])
-                lab.grid(row=i, column=0, sticky='W')
+                lab.grid(row=i, column=0, sticky='W', padx=5, pady=5)
                 ttk.Label(self, text=':').grid(row=i, column=1)
                 entry = ttk.Entry(self, width=30)
                 entry.grid(row=i, column=2, padx=5,pady=5)
@@ -91,11 +91,21 @@ class formManage(ttk.Frame):
                 self.entry_form.append(entry)
                 # self.grid(row=5, column=0, sticky='wnse', pady=5)
             self.show_password_butt = ttk.Button(self, text='Login',
-                                                 command=self.master.login)
-            self.show_password_butt.place(x=90, y=69)
+                                                 command='')
+            self.show_password_butt.place(x=115, y=65)
             self.quid_butt = ttk.Button(self, text='Quit',
                                         command=self.master.destroy)
-            self.quid_butt.place(x=202, y=69)
+            self.quid_butt.place(x=211, y=65)
+            self.register_butt = ttk.Button(self, text='Register',
+                                            command=self.master.register_user)
+            self.register_butt.place(x=115, y=95)
+            self.forget_password_butt = ttk.Button(self, text='Forget',
+                                                   command=self.master.forget_password)
+            self.forget_password_butt.place(x=211, y=95)
+            self.login2_butt = ttk.Button(self, text='Login',
+                                          command=self.master.login)
+            self.login2_butt.place(x=20, y=67, height=53, width=75)
+
         self.grid(row=1, column=0, sticky='wnse', pady=5)
         # self.pack(fill=tk.BOTH, expand=True)
 
@@ -302,7 +312,7 @@ class App(tk.Tk):
         super().__init__()
 
         self.title('Password Manager')
-        self.resizable(False, True)
+        self.resizable(False, False)
         self.dataModel = modelData.dataModel()
         self.masterAuth = False
         self.whoami = ''
@@ -329,9 +339,10 @@ class App(tk.Tk):
         self.updateContainer()
         # print(self.container_frame)
         # self.container_Butt_opt['show'].tkraise()
+
     def showPassword(self):
         print('debug, password appears')
-        [site, password] = self.container_frame['show'].getFromEntry()
+        [site, _] = self.container_frame['show'].getFromEntry()
         # if len(password) < 1 and len(site):
         #     self.container_frame['show'].deleteAll()
         if self.dataModel.check_exist_data(site, self.whoami):
@@ -345,7 +356,7 @@ class App(tk.Tk):
     def addPassword(self):
         [site, pwd1, pwd2] = self.container_frame['add'].getFromEntry()
         # print('debug add password', val)
-        print()
+        # print()
         if pwd1 == pwd2:
             if 7 < len(pwd1) < 50:
                 if not self.dataModel.check_exist_data(site, self.whoami):
@@ -363,6 +374,40 @@ class App(tk.Tk):
             messagebox.showerror("Error!",
                                  "Your password didn't same!/nPlease enter the same password!")
 
+    def deletePassword(self):
+        # print('test delete password button')
+        [site] = self.container_frame['delete'].getFromEntry()
+        if self.dataModel.check_exist_data(site, self.whoami):
+            self.dataModel.deletePassword(site, self.whoami)
+            messagebox.showinfo("Success!",
+                                f"Data {site} password have been deleted!")
+        else:
+            messagebox.showerror("Error!",
+                                 f"Your {site} site doesn't exists!")
+
+    def changePassword(self):
+        print('debug test change password button')
+        [site, oldPass, newPass1, newPass2] = self.container_frame['change'].getFromEntry()
+        if newPass1 == newPass2:
+            if 7 < len(newPass1) < 50:
+                # check existing user and password is dealing with it
+                if self.dataModel.check_exist_data(site, self.whoami):
+                    if oldPass == self.dataModel.get_password(site, self.whoami):
+                        self.dataModel.update_password(site, newPass1)
+                        messagebox.showinfo("Success!",
+                                            f"Your {site} password updated.")
+                    else:
+                        messagebox.showerror("Error!",
+                                             "Please enter correct old password!")
+                else:
+                    messagebox.showerror("Error!",
+                                         "Your site didn't exist in data base")
+            else:
+                messagebox.showerror("Error!",
+                                     "Password must have 8 to 50 character")
+        else:
+            messagebox.showerror("Error!",
+                                 "Please enter the same new Password correctly!")
 
     def updateContainer(self):
         if not self.masterAuth:
@@ -382,15 +427,19 @@ class App(tk.Tk):
     def updateContainer2(self):
         self.grid_rowconfigure(1, weight=2)
         name = self.container_frame_opt.rad_value.get()
+        opt = ''
         if name == 0:
             opt = 'show'
             self.container_frame[opt].deleteAll()
         elif name == 1:
             opt = 'add'
+            self.container_frame[opt].deleteAll()
         elif name == 2:
             opt = 'change'
+            self.container_frame[opt].deleteAll()
         elif name == 3:
             opt = 'delete'
+            self.container_frame[opt].deleteAll()
 
         container = self.container_frame[opt]
         label = self.title_label_frame[opt]
@@ -417,6 +466,12 @@ class App(tk.Tk):
         else:
             messagebox.showerror("Error!",
                                  "Your username didn't exist or wrong!,\nPlease enter your correct username or contact developer!")
+
+    def register_user(self):
+        pass
+
+    def forget_password(self):
+        pass
 
 
 if __name__ == '__main__':
