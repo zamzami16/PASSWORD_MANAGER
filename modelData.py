@@ -48,6 +48,7 @@ class dataModel:
         Get a password from a site
         """
         conn = self.connect_to_db(close=30)
+        user = user.lower()
         if conn is not None:
             df = pd.read_sql_query("SELECT * FROM USERS", conn)
             # print(len(df))
@@ -67,6 +68,7 @@ class dataModel:
         """Check site and password if exist"""
         con = self.connect_to_db(close=30)
         df = pd.read_sql_query('SELECT * FROM USERS', con)
+        user = user.lower()
         if len(df[df['USER'] == user]) > 0:
             # there is a password
             con.close()
@@ -75,11 +77,45 @@ class dataModel:
             con.close()
             return False
 
+    def add_data_user(self, user, password):
+        """
+        Adding User and Master Password
+        """
+        con = self.connect_to_db()
+        user = user.lower()
+        if con is not None:
+            query = "INSERT INTO USERS (USER, PASSWORD) VALUES (?,?);"
+            task = (user, password)
+            cur = con.cursor()
+            cur.execute(query, task)
+            con.commit()
+            cur.close()
+            con.close()
+        else:
+            # print("connect to db first")
+            pass
+
+    def change_password_user(self, user, password):
+        """
+        Change and update user password
+        """
+        user = user.lower()
+        con = self.connect_to_db()
+        query = "UPDATE USERS SET PASSWORD = ? WHERE USER = ?"
+        task = (password, user)
+        cur = con.cursor()
+        cur.execute(query, task)
+        con.commit()
+        cur.close()
+        con.close()
+
     def get_password(self, site, user):
         """
         Get a password from a site
         """
         conn = self.connect_to_db(close=30)
+        user = user.lower()
+        site = site.lower()
         if conn is not None:
             df = pd.read_sql_query(f"SELECT * FROM PASSWORD WHERE USER = '{user}'", conn)
             # print(len(df))
@@ -90,8 +126,8 @@ class dataModel:
                     conn.close()
                     return password
                 except:
-                    # messagebox.showerror("Error!", "The password site's didn't exists!")
-                    print('Password gaada')
+                    messagebox.showerror("Error!", "The password site's didn't exists!")
+                    # print('Password gaada')
         else:
             print("need connection first")
 
@@ -99,8 +135,10 @@ class dataModel:
         """
         Add new site and password data
         """
+        site = site.lower()
+        user = user.lower()
         conn = self.connect_to_db(close=30)
-        query = f"INSERT INTO PASSWORD (SITE, PASSWORD, USER) VALUES (?,?,?)"
+        query = "INSERT INTO PASSWORD (SITE, PASSWORD, USER) VALUES (?,?,?)"
         task = (site, password, user)
         cur = conn.cursor()
         cur.execute(query, task)
@@ -110,6 +148,8 @@ class dataModel:
 
     def check_exist_data(self, site, user):
         """Check site and password if exist"""
+        site = site.lower()
+        user = user.lower()
         con = self.connect_to_db(close=30)
         df = pd.read_sql_query('SELECT * FROM PASSWORD', con)
         if len(df[df['SITE'] == site]) > 0:
@@ -127,6 +167,7 @@ class dataModel:
         """
         Update existing site password
         """
+        site = site.lower()
         con = self.connect_to_db()
         query = "UPDATE PASSWORD SET PASSWORD = ? WHERE SITE = ?"
         task = (new_password, site)
@@ -137,6 +178,8 @@ class dataModel:
         con.close()
 
     def deletePassword(self, site, user):
+        site = site.lower()
+        user = user.lower()
         con = self.connect_to_db()
         query = "DELETE FROM PASSWORD WHERE SITE = ? AND USER = ?"
         task = (site, user)
