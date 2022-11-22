@@ -1,0 +1,9 @@
+.env/
+dist/
+build/
+__pychace__/
+.idea/
+*crypt
+modelDatabk.py
+temp.py
+password.db

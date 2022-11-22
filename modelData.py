@@ -1,5 +1,4 @@
 import sqlite3
-import pandas as pd
 
 class dataModel:
     """
@@ -10,26 +9,36 @@ class dataModel:
         """
         Init data table
         """
-        self.db_name = 'password.db'
-        con = self.connect_to_db()
-        query_init = "CREATE TABLE IF NOT EXISTS PASSWORD (ID INTEGER PRIMARY KEY AUTOINCREMENT, SITE CHAR(50) NOT " \
-                     "NULL UNIQUE, PASSWORD CHAR(50) NOT NULL, USER CHAR(50) NOT NULL);"
-        query_init2 = "CREATE TABLE IF NOT EXISTS USERS (ID INTEGER PRIMARY KEY AUTOINCREMENT, USER CHAR(50) NOT NULL " \
-                      "UNIQUE, PASSWORD CHAR(50) NOT NULL); "
-        con.execute(query_init)
-        con.execute(query_init2)
-        con.commit()
-        con.close()
+        self.db_name = "password.db"
+        query = """           
+            CREATE TABLE IF NOT EXISTS USERS (
+                IdUser INTEGER PRIMARY KEY AUTOINCREMENT, 
+                UserName CHAR(50) NOT NULL UNIQUE, 
+                UserPassword CHAR(50) NOT NULL);
+
+            CREATE TABLE IF NOT EXISTS SITE_PASSWORD (
+                IdSitePassword INTEGER PRIMARY KEY AUTOINCREMENT, 
+                SiteName CHAR(50) NOT NULL, 
+                SitePassword CHAR(50) NOT NULL, 
+                UserName CHAR(50),
+                FOREIGN KEY (UserName) REFERENCES USERS(UserName));
+        """
+        try:
+            with self.connect_to_db() as con:
+                con.execute("PRAGMA foreign_keys = 1")
+                cur = con.cursor()
+                cur.executescript(query)
+        except sqlite3.Error as err:
+            print(err)
 
     def drop_table(self, table):
         """
         Drop all Table PASSWORD
         """
-        con = self.connect_to_db()
         query = "DROP TABLE ?"
-        con.execute(query, table)
-        con.commit()
-        con.close()
+        with self.connect_to_db() as con:
+            con.execute(query, table)
+            con.commit()
 
     def connect_to_db(self, close=60):
         """
@@ -48,53 +57,44 @@ class dataModel:
         """
         Get a password from a site
         """
-        conn = self.connect_to_db(close=30)
         user = user.lower()
-        if conn is not None:
-            df = pd.read_sql_query("SELECT * FROM USERS", conn)
-            # print(len(df))
-            if len(df) > 0:
-                try:
-                    password = df[df['USER'] == user].iloc[0, 2]
-                    del df
-                    conn.close()
-                    return password
-                except:
-                    # messagebox.showerror("Error!", "The password site's didn't exists!")
-                    print('Password gaada')
-        else:
-            print("need connection first")
+        try:
+            with self.connect_to_db() as con:
+                query = "SELECT UserPassword FROM USERS WHERE UserName = ?"
+                password = con.execute(query, (user,))
+                # print(password.fetchone()[0])
+                return password.fetchone()[0]
+        except sqlite3.Error as err:
+            print("get_password_login error: ", err)
 
     def check_exist_data_login(self, user):
         """Check site and password if exist"""
-        con = self.connect_to_db(close=30)
-        df = pd.read_sql_query('SELECT * FROM USERS', con)
-        user = user.lower()
-        if len(df[df['USER'] == user]) > 0:
-            # there is a password
-            con.close()
-            return True
-        else:
-            con.close()
-            return False
+        try:
+            with self.connect_to_db() as con:
+                query = "SELECT UserName FROM USERS WHERE UserName = ?"
+                username = con.execute(query, (user,))
+                username = username.fetchone()
+                # print(f"Check user: {username}")
+                return username
+        except sqlite3.Error as err:
+            print("check_exist_data_login error: ", err)
 
     def add_data_user(self, user, password):
         """
         Adding User and Master Password
         """
-        con = self.connect_to_db()
         user = user.lower()
-        if con is not None:
-            query = "INSERT INTO USERS (USER, PASSWORD) VALUES (?,?);"
-            task = (user, password)
-            cur = con.cursor()
-            cur.execute(query, task)
-            con.commit()
-            cur.close()
-            con.close()
-        else:
-            # print("connect to db first")
-            pass
+        try:
+            with self.connect_to_db() as con:
+                query = (
+                    "INSERT INTO USERS (UserName, UserPassword) VALUES (?,?);"
+                )
+                task = (user, password)
+                con.execute(query, task)
+                con.commit()
+        except sqlite3.Error as err:
+            # print error message
+            print("add_data_user error: ", err)
 
     def change_password_user(self, user, password):
         """
@@ -102,35 +102,30 @@ class dataModel:
         """
         user = user.lower()
         con = self.connect_to_db()
-        query = "UPDATE USERS SET PASSWORD = ? WHERE USER = ?"
+        query = "UPDATE USERS SET UserPassword = ? WHERE UserName = ?"
         task = (password, user)
-        cur = con.cursor()
-        cur.execute(query, task)
-        con.commit()
-        cur.close()
-        con.close()
+        try:
+            with self.connect_to_db() as con:
+                con.execute(query, task)
+                con.commit()
+        except sqlite3.Error as err:
+            print("change_password_user error: ", err)
 
     def get_password(self, site, user):
         """
         Get a password from a site
         """
-        conn = self.connect_to_db(close=30)
         user = user.lower()
         site = site.lower()
-        if conn is not None:
-            df = pd.read_sql_query(f"SELECT * FROM PASSWORD WHERE USER = '{user}'", conn)
-            # print(len(df))
-            if len(df) > 0:
-                try:
-                    password = df[df['SITE'] == site].iloc[0, 2]
-                    del df
-                    conn.close()
-                    return password
-                except:
-                    messagebox.showerror("Error!", "The password site's didn't exists!")
-                    # print('Password gaada')
-        else:
-            print("need connection first")
+        query = "SELECT SitePassword FROM SITE_PASSWORD WHERE UserName = ? AND SiteName = ?"
+        try:
+            with self.connect_to_db() as con:
+                sitePassword = con.execute(query, (user, site))
+                sitePassword = sitePassword.fetchone()
+                # print(sitePassword)
+                return sitePassword[0]
+        except sqlite3.Error as err:
+            print("get passwor error: ", err)
 
     def add_password(self, site, password, user):
         """
@@ -138,31 +133,38 @@ class dataModel:
         """
         site = site.lower()
         user = user.lower()
-        conn = self.connect_to_db(close=30)
-        query = "INSERT INTO PASSWORD (SITE, PASSWORD, USER) VALUES (?,?,?)"
-        task = (site, password, user)
-        cur = conn.cursor()
-        cur.execute(query, task)
-        conn.commit()
-        cur.close()
-        conn.close()
+        query = """
+            INSERT INTO SITE_PASSWORD (SiteName, SitePassword, UserName)
+            VALUES (?,?,?);
+        """
+        try:
+            with self.connect_to_db() as con:
+                con.execute(query, (site, password, user))
+                con.commit()
+        except sqlite3.Error as err:
+            print("add_password error: ", err)
 
     def check_exist_data(self, site, user):
-        """Check site and password if exist"""
+        """
+        Check site and password if exist
+        return: True if SiteName exist.
+        """
         site = site.lower()
         user = user.lower()
-        con = self.connect_to_db(close=30)
-        df = pd.read_sql_query('SELECT * FROM PASSWORD', con)
-        if len(df[df['SITE'] == site]) > 0:
-            if len(df[df['USER']==user]) > 0:
-                # there is a password
-                con.close()
-                return True
-            else:
-                return False
-        else:
-            con.close()
-            return False
+        query = """
+            SELECT SiteName FROM SITE_PASSWORD 
+            WHERE SiteName = ? AND UserName = ?;
+        """
+        try:
+            with self.connect_to_db() as con:
+                siteName = con.execute(query, (site, user))
+                siteName = siteName.fetchone()
+                if siteName:
+                    return True
+                else:
+                    return False
+        except sqlite3.Error as err:
+            print("check_exist_data_site error: ", err)
 
     def update_password(self, site, new_password):
         """
@@ -170,7 +172,7 @@ class dataModel:
         """
         site = site.lower()
         con = self.connect_to_db()
-        query = "UPDATE PASSWORD SET PASSWORD = ? WHERE SITE = ?"
+        query = "UPDATE SITE_PASSWORD SET SitePassword = ? WHERE SiteName = ?"
         task = (new_password, site)
         cur = con.cursor()
         cur.execute(query, task)
@@ -179,14 +181,17 @@ class dataModel:
         con.close()
 
     def deletePassword(self, site, user):
+        """
+        delete existing site password
+        """
         site = site.lower()
         user = user.lower()
         con = self.connect_to_db()
-        query = "DELETE FROM PASSWORD WHERE SITE = ? AND USER = ?"
+        query = "DELETE FROM SITE_PASSWORD WHERE SiteName = ? AND UserName = ?"
         task = (site, user)
         con.execute(query, task)
         con.commit()
         con.close()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

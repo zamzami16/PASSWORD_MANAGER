@@ -1,6 +1,6 @@
 import tkinter as tk
 import modelData
-import pandas as pd
+
 import sqlite3
 from tkinter import ttk, Canvas, messagebox
 
@@ -253,6 +253,7 @@ class managementWindow:
             return value
 
     def register_user(self):
+        """Register new user"""
         [user, pwd1, pwd2] = self.getDataEntry('register')
         if pwd1 == pwd2:
             if 7 < len(pwd1) < 51:
