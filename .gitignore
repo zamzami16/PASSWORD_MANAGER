@@ -1,7 +1,7 @@
+__pychace__/
 .env/
 dist/
 build/
-__pychace__/
 *pyc
 .idea/
 *crypt

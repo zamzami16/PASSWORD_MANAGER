@@ -1,5 +1,6 @@
 import sqlite3
 
+
 class dataModel:
     """
     DataBase manipulation
@@ -192,6 +193,7 @@ class dataModel:
         con.execute(query, task)
         con.commit()
         con.close()
+
 
 if __name__ == "__main__":
     pass
